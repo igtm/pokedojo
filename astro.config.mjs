@@ -2,7 +2,11 @@ import { defineConfig } from 'astro/config'
 import solid from '@astrojs/solid-js'
 import starlight from '@astrojs/starlight'
 
+const base = '/pokedojo'
+
 export default defineConfig({
+  site: 'https://igtm.github.io',
+  base,
   integrations: [
     solid(),
     starlight({
