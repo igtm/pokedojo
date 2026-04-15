@@ -1,0 +1,58 @@
+---
+title: 5.2 6体を組む
+description: パーティー構築で確認する項目
+---
+
+import CoverageTool from '../../../components/tools/CoverageTool'
+import TeamChecklistTool from '../../../components/tools/TeamChecklistTool'
+import QuizBlock from '../../../components/tools/QuizBlock'
+
+## このページで覚えること
+
+- 6体は「好きなポケモンを並べる」だけではなく、役割を分担する
+- 弱点の重なり、攻めの一貫、引き先を確認する
+- 最後に誰で勝つかを言える構築にする
+
+## 6体に必要な役割
+
+最初は、次の役割を意識します。
+
+- 初手で出しやすいポケモン
+- 相手の攻撃を受ける引き先
+- 相手を崩す高火力または積み役
+- 終盤に残したい詰め役
+- 素早さで上を取る手段
+- 不利な展開を止める手段
+
+全部を完璧に満たす必要はありません。足りないものを知った上で、選出や立ち回りで補うことが大事です。
+
+<CoverageTool client:load />
+
+<TeamChecklistTool client:load />
+
+## 例
+
+ほのお、ひこう、こおり弱点が多い構築では、相手のいわ技やでんき技だけで崩されることがあります。  
+弱点を消すためだけに1体を入れるのではなく、そのポケモンが攻めにも参加できるかを見ます。
+
+<QuizBlock
+  client:load
+  questions={[
+    {
+      prompt: '構築で「引き先」が必要な理由はどれ？',
+      choices: ['不利対面で安全に立て直すため', '必ず初手に出すため', '技を使わないため'],
+      answerIndex: 0,
+      explanation: '不利対面で毎回倒されると勝ち筋が残らないため、交代先を用意します。',
+    },
+    {
+      prompt: '弱点が重なっている時にまず見るべきものはどれ？',
+      choices: ['その攻撃を半減や無効で受けられるか', '全員の名前が似ているか', '色が同じか'],
+      answerIndex: 0,
+      explanation: '弱点が多くても、受け先や切り返し手段があれば戦える場合があります。',
+    },
+  ]}
+/>
+
+## 次に見るページ
+
+[6.1 選出・交換・勝ち筋](/in-battle/decision/)

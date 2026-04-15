@@ -1,0 +1,60 @@
+---
+title: 4.1 対戦用語を読む
+description: よく使われる非公式用語を初心者向けに整理する
+---
+
+import { glossaryTerms } from '../../../lib/glossary'
+import QuizBlock from '../../../components/tools/QuizBlock'
+
+## このページで覚えること
+
+- 非公式用語は、対戦の考え方を短く伝えるために使われる
+- 公式名ではないため、文脈によって少し意味が揺れる
+- 用語を暗記するより、試合中の判断に置き換える
+
+## まず覚える言葉
+
+{glossaryTerms.map((item) => (
+  <div class="dojo-step">
+    <p>
+      <strong>{item.term}</strong> <span class="dojo-badge">{item.category}</span>
+      {!item.isOfficial && <span class="dojo-badge dojo-badge--warning">非公式</span>}
+    </p>
+    <p>{item.description}</p>
+    <p>例: {item.example}</p>
+  </div>
+))}
+
+## 言葉を判断へ変える
+
+「サイクルを回す」は、なんとなく交換することではありません。  
+相手の攻撃を受けられるポケモンへ交代し、次のターンにこちらが有利な選択を押せるようにすることです。
+
+「起点にする」は、ただ相手の前で積むことではありません。  
+相手がこちらを止めにくい状態を作り、積み技や展開技を安全に使うことです。
+
+## 例
+
+相手がこちらの攻撃を受けるために毎回同じポケモンへ交代してくるなら、そのポケモンに負担を集中させる考え方が役割集中です。
+
+<QuizBlock
+  client:load
+  questions={[
+    {
+      prompt: '「一貫」に近い説明はどれ？',
+      choices: ['同じ技が相手の複数体に通りやすい状態', '必ず先に動ける状態', '公式のバトル形式名'],
+      answerIndex: 0,
+      explanation: '一貫は、同じタイプや技を止める相手が少ない状態を指すことが多いです。',
+    },
+    {
+      prompt: '「安定択」として近いものはどれ？',
+      choices: ['当たれば勝ち、外したら負けの選択', '相手の複数行動に対して損が小さい選択', '一番かっこいい技'],
+      answerIndex: 1,
+      explanation: '安定択は最大リターンよりも、外した時の被害が小さい選択を指します。',
+    },
+  ]}
+/>
+
+## 次に見るページ
+
+[5.1 構築タイプを選ぶ](/building/archetypes/)

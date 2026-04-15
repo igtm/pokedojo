@@ -1,0 +1,164 @@
+---
+import { getCollection } from 'astro:content'
+import { glossaryTerms } from '../../lib/glossary'
+
+interface SearchRecord {
+  title: string
+  description: string
+  url: string
+  text: string
+}
+
+const docs = await getCollection('docs', ({ data }) => !data.draft && data.pagefind !== false)
+
+function toUrl(id: string): string {
+  const cleanId = id.replace(/\/index$/, '')
+  if (cleanId === 'index') return '/'
+  return `/${cleanId}/`
+}
+
+function toText(markdown: string): string {
+  return markdown
+    .replace(/^import .+$/gm, ' ')
+    .replace(/<QuizBlock[\s\S]*?\/>/g, ' ')
+    .replace(/\{glossaryTerms\.map[\s\S]*?\)\)\}/g, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/[{}[\]()`*_>#:-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+const searchData: SearchRecord[] = docs.map((entry) => {
+  const body = 'body' in entry && typeof entry.body === 'string' ? entry.body : ''
+  const isGlossary = entry.id === 'glossary' || entry.id === 'glossary/index'
+  const extra = isGlossary
+    ? glossaryTerms.map((term) => `${term.term} ${term.category} ${term.description} ${term.example}`).join(' ')
+    : ''
+  const pageText = isGlossary ? '' : toText(body)
+
+  return {
+    title: entry.data.title,
+    description: entry.data.description ?? '',
+    url: toUrl(entry.id),
+    text: `${entry.data.title} ${entry.data.description ?? ''} ${pageText} ${extra}`,
+  }
+})
+
+const label = Astro.locals.t('search.label')
+const cancelLabel = Astro.locals.t('search.cancelLabel')
+const ctrlLabel = Astro.locals.t('search.ctrlKey')
+---
+
+<dojo-search class={Astro.props.class}>
+  <button data-open-modal type="button" aria-label={label} aria-keyshortcuts="Control+K">
+    <span aria-hidden="true">⌕</span>
+    <span class="sl-hidden md:sl-block">{label}</span>
+    <kbd class="sl-hidden md:sl-flex"><kbd>{ctrlLabel}</kbd><kbd>K</kbd></kbd>
+  </button>
+
+  <dialog aria-label={label}>
+    <div class="dojo-search__frame">
+      <div class="dojo-search__bar">
+        <input
+          data-search-input
+          type="search"
+          aria-label="検索キーワード"
+          placeholder="用語、タイプ、構築を検索"
+          autocomplete="off"
+        />
+        <button data-close-modal type="button">{cancelLabel}</button>
+      </div>
+      <p data-search-status class="dojo-search__status">キーワードを入力してください。</p>
+      <div data-search-results class="dojo-search__results"></div>
+    </div>
+  </dialog>
+</dojo-search>
+
+<script is:inline define:vars={{ searchData }}>
+  class DojoSearch extends HTMLElement {
+    connectedCallback() {
+      const openButton = this.querySelector('[data-open-modal]')
+      const closeButton = this.querySelector('[data-close-modal]')
+      const dialog = this.querySelector('dialog')
+      const frame = this.querySelector('.dojo-search__frame')
+      const input = this.querySelector('[data-search-input]')
+      const status = this.querySelector('[data-search-status]')
+      const results = this.querySelector('[data-search-results]')
+
+      if (!openButton || !closeButton || !dialog || !frame || !input || !status || !results) return
+
+      const openModal = (event) => {
+        dialog.showModal()
+        document.body.toggleAttribute('data-search-modal-open', true)
+        input.focus()
+        event?.stopPropagation()
+      }
+
+      const closeModal = () => {
+        dialog.close()
+        document.body.toggleAttribute('data-search-modal-open', false)
+      }
+
+      const render = () => {
+        const query = input.value.trim()
+        results.innerHTML = ''
+
+        if (!query) {
+          status.textContent = 'キーワードを入力してください。'
+          return
+        }
+
+        const terms = query
+          .toLowerCase()
+          .split(/\s+/)
+          .filter(Boolean)
+        const matches = searchData
+          .map((item) => {
+            const haystack = item.text.toLowerCase()
+            const score = terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0)
+            return { item, score }
+          })
+          .filter((entry) => entry.score > 0)
+          .sort((a, b) => b.score - a.score || a.item.title.localeCompare(b.item.title, 'ja'))
+          .slice(0, 8)
+
+        status.textContent = matches.length ? `${matches.length}件の候補` : '一致するページがありません。'
+
+        for (const { item } of matches) {
+          const link = document.createElement('a')
+          link.className = 'dojo-search__result'
+          link.href = item.url
+          link.innerHTML = `<strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.description)}</span>`
+          results.append(link)
+        }
+      }
+
+      const onWindowClick = (event) => {
+        if (dialog.open && document.body.contains(event.target) && !frame.contains(event.target)) {
+          closeModal()
+        }
+      }
+
+      openButton.addEventListener('click', openModal)
+      closeButton.addEventListener('click', closeModal)
+      input.addEventListener('input', render)
+      window.addEventListener('click', onWindowClick)
+      window.addEventListener('keydown', (event) => {
+        if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+          dialog.open ? closeModal() : openModal(event)
+          event.preventDefault()
+        }
+        if (event.key === 'Escape' && dialog.open) closeModal()
+      })
+    }
+  }
+
+  function escapeHtml(value) {
+    return value.replace(/[&<>"']/g, (char) => {
+      const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+      return entities[char]
+    })
+  }
+
+  customElements.define('dojo-search', DojoSearch)
+</script>
