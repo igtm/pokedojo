@@ -3,7 +3,7 @@ const layers = [
   {
     label: '1',
     title: '優先度を比べる',
-    detail: '先制技や守る系の技は、通常技より先に動きやすい。',
+    detail: '高い優先度の技は、低い優先度の技より先に動く。',
   },
   {
     label: '2',
@@ -13,7 +13,7 @@ const layers = [
   {
     label: '3',
     title: '場の効果で変わる',
-    detail: '素早さ操作、トリックルーム、まひなどで順番がずれる。',
+    detail: '素早さ操作、トリックルーム、まひなどで同じ優先度内の順番がずれる。',
   },
 ]
 ---
@@ -21,7 +21,7 @@ const layers = [
 <figure class="dojo-diagram dojo-speed-diagram">
   <figcaption>
     <strong>行動順を見る順番</strong>
-    <span>素早さは重要だが、最初に見るのは技の優先度。</span>
+    <span>素早さで勝てるのは、基本的に同じ優先度の中だけ。</span>
   </figcaption>
   <div class="dojo-speed-diagram__layers" aria-label="行動順を決める要素">
     {
