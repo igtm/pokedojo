@@ -45,6 +45,34 @@ html {
   font-size: 1rem;
 }
 
+.sl-markdown-content table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--dojo-border);
+  border-radius: 8px;
+  border-spacing: 0;
+  background: color-mix(in srgb, var(--sl-color-bg) 88%, var(--sl-color-accent-low));
+}
+
+.sl-markdown-content th,
+.sl-markdown-content td {
+  min-width: 8rem;
+  border-color: var(--dojo-border);
+  padding: 0.65rem 0.75rem;
+  vertical-align: top;
+}
+
+.sl-markdown-content th {
+  color: var(--sl-color-accent-high);
+  background: color-mix(in srgb, var(--sl-color-accent-low) 55%, transparent);
+  font-weight: 800;
+}
+
+.sl-markdown-content tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--sl-color-bg) 92%, var(--sl-color-accent-low));
+}
+
 .dojo-lead {
   color: var(--sl-color-gray-2);
   font-size: 1.1rem;

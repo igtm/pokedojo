@@ -38,45 +38,45 @@ export default defineConfig({
         {
           label: '1. バトルの基本',
           items: [
-            { label: '1.1 勝敗とターン', link: '/basics/battle-flow/' },
-            { label: '1.2 シングルとダブル', link: '/basics/singles-doubles/' },
+            { label: '1.1 バトル画面と1ターン', link: '/basics/battle-flow/' },
+            { label: '1.2 まずはシングルから', link: '/basics/singles-doubles/' },
           ],
         },
         {
           label: '2. タイプ相性',
           items: [
-            { label: '2.1 倍率で考える', link: '/type-matchups/' },
+            { label: '2.1 タイプ相性の読み方', link: '/type-matchups/' },
           ],
         },
         {
           label: '3. ダメージと行動順',
           items: [
-            { label: '3.1 乱数・素早さ・優先度', link: '/damage-speed/' },
+            { label: '3.1 HP・ダメージ・行動順', link: '/damage-speed/' },
           ],
         },
         {
           label: '4. 役割と非公式用語',
           items: [
-            { label: '4.1 対戦用語を読む', link: '/glossary/' },
+            { label: '4.1 対戦用語をやさしく読む', link: '/glossary/' },
           ],
         },
         {
           label: '5. 構築の型',
           items: [
-            { label: '5.1 構築タイプを選ぶ', link: '/building/archetypes/' },
-            { label: '5.2 6体を組む', link: '/building/checklist/' },
+            { label: '5.1 最初の構築テンプレ', link: '/building/archetypes/' },
+            { label: '5.2 6体を表で組む', link: '/building/checklist/' },
           ],
         },
         {
           label: '6. 試合中の判断',
           items: [
-            { label: '6.1 選出・交換・勝ち筋', link: '/in-battle/decision/' },
+            { label: '6.1 1ターンの選び方', link: '/in-battle/decision/' },
           ],
         },
         {
           label: '7. Champions 実戦準備',
           items: [
-            { label: '7.1 発展と環境の見方', link: '/champions/advanced/' },
+            { label: '7.1 情報の見方と発展', link: '/champions/advanced/' },
           ],
         },
         {
