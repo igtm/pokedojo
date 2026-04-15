@@ -22,6 +22,8 @@ function toText(markdown: string): string {
   return markdown
     .replace(/^import .+$/gm, ' ')
     .replace(/<QuizBlock[\s\S]*?\/>/g, ' ')
+    .replace(/<MermaidDiagram[\s\S]*?<\/MermaidDiagram>/g, ' ')
+    .replace(/<(DamageFactorsDiagram|SpeedOrderDiagram)[\s\S]*?\/>/g, ' ')
     .replace(/\{glossaryTerms\.map[\s\S]*?\)\)\}/g, ' ')
     .replace(/<[^>]+>/g, ' ')
     .replace(/[{}[\]()`*_>#:-]/g, ' ')

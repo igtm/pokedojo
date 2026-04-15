@@ -1,0 +1,153 @@
+---
+interface Props {
+  title?: string
+  caption?: string
+}
+
+const { title, caption } = Astro.props
+---
+
+<dojo-mermaid class="dojo-diagram dojo-mermaid">
+  <figure>
+    {
+      title && (
+        <figcaption>
+          <strong>{title}</strong>
+          {caption && <span>{caption}</span>}
+        </figcaption>
+      )
+    }
+    <pre data-mermaid-source class="dojo-mermaid__source"><slot /></pre>
+    <div data-mermaid-output class="dojo-mermaid__output" aria-label={title ?? '図解'}></div>
+    <p data-mermaid-error class="dojo-mermaid__error" hidden>図を表示できませんでした。記法を確認してください。</p>
+  </figure>
+</dojo-mermaid>
+
+<script>
+  import type { MermaidConfig } from 'mermaid'
+
+  let renderCount = 0
+  let mermaidModule: typeof import('mermaid').default | undefined
+
+  const loadMermaid = async () => {
+    mermaidModule ??= (await import('mermaid')).default
+    return mermaidModule
+  }
+
+  const getActiveTheme = () => {
+    const selectedTheme = document.documentElement.dataset.theme
+    if (selectedTheme === 'light') return 'light'
+    if (selectedTheme === 'dark') return 'dark'
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  }
+
+  const getMermaidConfig = (): MermaidConfig => {
+    const dark = getActiveTheme() === 'dark'
+    return {
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme: 'base',
+      themeVariables: {
+        background: dark ? '#0b0f0a' : '#ffffff',
+        primaryColor: dark ? '#0e2d22' : '#d7f4e4',
+        primaryTextColor: dark ? '#f7fbf5' : '#10140f',
+        primaryBorderColor: dark ? '#57c28d' : '#168957',
+        secondaryColor: dark ? '#1c2319' : '#f7f8f3',
+        secondaryTextColor: dark ? '#f7fbf5' : '#10140f',
+        secondaryBorderColor: dark ? '#687763' : '#91a18d',
+        tertiaryColor: dark ? '#11170f' : '#ecf0e7',
+        tertiaryTextColor: dark ? '#f7fbf5' : '#10140f',
+        lineColor: dark ? '#cad8c4' : '#52614e',
+        textColor: dark ? '#f7fbf5' : '#10140f',
+        mainBkg: dark ? '#0e2d22' : '#d7f4e4',
+        nodeBorder: dark ? '#57c28d' : '#168957',
+        clusterBkg: dark ? '#1c2319' : '#f7f8f3',
+        clusterBorder: dark ? '#687763' : '#91a18d',
+        fontFamily: 'system-ui, "Segoe UI", sans-serif',
+      },
+    }
+  }
+
+  class DojoMermaid extends HTMLElement {
+    source?: string
+    output?: HTMLElement | null
+    error?: HTMLElement | null
+    themeObserver?: MutationObserver
+    intersectionObserver?: IntersectionObserver
+    media?: MediaQueryList
+    onMediaChange?: () => void
+    hasRendered = false
+
+    connectedCallback() {
+      this.source = this.querySelector('[data-mermaid-source]')?.textContent?.trim()
+      this.output = this.querySelector<HTMLElement>('[data-mermaid-output]')
+      this.error = this.querySelector<HTMLElement>('[data-mermaid-error]')
+      this.classList.add('is-loading')
+
+      this.themeObserver = new MutationObserver(() => {
+        if (this.hasRendered) this.renderDiagram()
+      })
+      this.themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme'],
+      })
+
+      this.media = window.matchMedia('(prefers-color-scheme: dark)')
+      this.onMediaChange = () => {
+        if (this.hasRendered) this.renderDiagram()
+      }
+      this.media.addEventListener('change', this.onMediaChange)
+
+      if ('IntersectionObserver' in window) {
+        this.intersectionObserver = new IntersectionObserver(
+          (entries) => {
+            if (!entries.some((entry) => entry.isIntersecting)) return
+            this.hasRendered = true
+            this.renderDiagram()
+            this.intersectionObserver?.disconnect()
+          },
+          { rootMargin: '160px' },
+        )
+        this.intersectionObserver.observe(this)
+      } else {
+        this.hasRendered = true
+        this.renderDiagram()
+      }
+    }
+
+    disconnectedCallback() {
+      this.themeObserver?.disconnect()
+      this.intersectionObserver?.disconnect()
+      if (this.media && this.onMediaChange) {
+        this.media.removeEventListener('change', this.onMediaChange)
+      }
+    }
+
+    async renderDiagram() {
+      if (!this.source || !this.output) return
+
+      if (this.error) this.error.hidden = true
+
+      try {
+        const mermaid = await loadMermaid()
+        mermaid.initialize(getMermaidConfig())
+        const id = `dojo-mermaid-${Date.now()}-${++renderCount}`
+        const { svg, bindFunctions } = await mermaid.render(id, this.source)
+        this.output.innerHTML = svg
+        bindFunctions?.(this.output)
+        this.classList.add('is-rendered')
+        this.classList.remove('is-loading')
+        this.classList.remove('is-error')
+      } catch {
+        this.classList.remove('is-loading')
+        this.classList.remove('is-rendered')
+        this.classList.add('is-error')
+        if (this.error) this.error.hidden = false
+      }
+    }
+  }
+
+  if (!customElements.get('dojo-mermaid')) {
+    customElements.define('dojo-mermaid', DojoMermaid)
+  }
+</script>

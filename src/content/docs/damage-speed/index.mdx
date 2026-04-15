@@ -3,6 +3,9 @@ title: 3.1 ダメージと行動順
 description: 乱数、確定数、素早さ、優先度の基礎
 ---
 
+import DamageFactorsDiagram from '../../../components/diagrams/DamageFactorsDiagram.astro'
+import MermaidDiagram from '../../../components/diagrams/MermaidDiagram.astro'
+import SpeedOrderDiagram from '../../../components/diagrams/SpeedOrderDiagram.astro'
 import DamageCalcTool from '../../../components/tools/DamageCalcTool'
 import QuizBlock from '../../../components/tools/QuizBlock'
 
@@ -18,11 +21,26 @@ import QuizBlock from '../../../components/tools/QuizBlock'
 
 「確定1発」は必ず1回で倒せること。「乱数1発」は倒せる場合と耐えられる場合があること。「確定2発」は2回当てれば倒せることです。
 
+<DamageFactorsDiagram />
+
+<MermaidDiagram title="倒し切れるかを見る流れ" caption="確定、乱数、足りない時の判断を分ける。">
+{`
+flowchart LR
+  A[相手の残りHPを見る] --> B{最小ダメージで倒せる?}
+  B -->|はい| C[確定で倒せる]
+  B -->|いいえ| D{最大ダメージなら倒せる?}
+  D -->|はい| E[乱数で倒せる]
+  D -->|いいえ| F[別の削りや交換を考える]
+`}
+</MermaidDiagram>
+
 ## 行動順
 
 多くの技は素早さが高い方から動きます。ただし、先制技や優先度の高い技は、素早さより先に処理されることがあります。
 
 終盤では「相手より速いか」だけでなく「先制技で縛られていないか」も見ます。
+
+<SpeedOrderDiagram />
 
 <DamageCalcTool client:load />
 

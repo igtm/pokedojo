@@ -1,0 +1,48 @@
+---
+const factors = [
+  {
+    label: '技',
+    title: '威力',
+    detail: '技そのものの基礎火力。',
+  },
+  {
+    label: '攻撃側',
+    title: '能力・補正',
+    detail: 'こうげき/とくこう、持ち物、積みなど。',
+  },
+  {
+    label: '防御側',
+    title: '耐久',
+    detail: 'HP、ぼうぎょ/とくぼう、耐性。',
+  },
+  {
+    label: '相性',
+    title: '一致・弱点',
+    detail: 'タイプ一致、タイプ相性、天候など。',
+  },
+  {
+    label: '最後',
+    title: '乱数',
+    detail: '同じ条件でも少しだけ幅が出る。',
+  },
+]
+---
+
+<figure class="dojo-diagram dojo-factor-diagram">
+  <figcaption>
+    <strong>ダメージを作る主な要素</strong>
+    <span>「火力が高い」だけでなく、どの要素で増えているかを分けて見る。</span>
+  </figcaption>
+  <ol class="dojo-factor-diagram__chain" aria-label="ダメージ計算の要素">
+    {
+      factors.map((factor) => (
+        <li>
+          <span class="dojo-factor-diagram__label">{factor.label}</span>
+          <strong>{factor.title}</strong>
+          <span>{factor.detail}</span>
+        </li>
+      ))
+    }
+  </ol>
+  <p class="dojo-diagram__note">倒せるか迷う時は、最大ダメージではなく最小ダメージで倒せるかを先に見る。</p>
+</figure>

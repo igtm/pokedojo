@@ -1,0 +1,37 @@
+---
+const layers = [
+  {
+    label: '1',
+    title: '優先度を比べる',
+    detail: '先制技や守る系の技は、通常技より先に動きやすい。',
+  },
+  {
+    label: '2',
+    title: '同じ優先度なら素早さ',
+    detail: '通常技同士なら、基本は素早いポケモンから動く。',
+  },
+  {
+    label: '3',
+    title: '場の効果で変わる',
+    detail: '素早さ操作、トリックルーム、まひなどで順番がずれる。',
+  },
+]
+---
+
+<figure class="dojo-diagram dojo-speed-diagram">
+  <figcaption>
+    <strong>行動順を見る順番</strong>
+    <span>素早さは重要だが、最初に見るのは技の優先度。</span>
+  </figcaption>
+  <div class="dojo-speed-diagram__layers" aria-label="行動順を決める要素">
+    {
+      layers.map((layer) => (
+        <div class="dojo-speed-diagram__layer">
+          <span>{layer.label}</span>
+          <strong>{layer.title}</strong>
+          <p>{layer.detail}</p>
+        </div>
+      ))
+    }
+  </div>
+</figure>
