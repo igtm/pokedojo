@@ -66,6 +66,7 @@ export default defineConfig({
             { label: '5.1 最初の構築テンプレ', link: '/building/archetypes/' },
             { label: '5.2 6体を表で組む', link: '/building/checklist/' },
             { label: '5.3 努力値・種族値の読み方', link: '/building/ev-terms/' },
+            { label: '5.4 持ち物の選び方', link: '/building/items/' },
           ],
         },
         {
