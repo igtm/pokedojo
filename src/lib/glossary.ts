@@ -110,7 +110,7 @@ export const glossaryTerms: GlossaryTerm[] = [
     category: '育成',
     isOfficial: false,
     description: '特定の相手より先に動けるよう、すばやさへの努力値や性格を調整すること。',
-    example: '「準速相手を抜けるようにS調整する」',
+    example: '「最速200抜きまでS調整する」',
   },
   {
     term: 'Sライン',
@@ -130,15 +130,22 @@ export const glossaryTerms: GlossaryTerm[] = [
     term: 'S130族',
     category: '育成',
     isOfficial: false,
-    description: '素早さ種族値が130のポケモンたちを指す非公式表現。素早さ比較の目安として使う。',
-    example: '「S130族抜きまで素早さを調整する」',
+    description: '素早さ種族値が130のポケモンたちを指す非公式表現。Lv50の最速目安は200で、全ポケモン中の最速という意味ではない。',
+    example: '「最速200抜きまで素早さを調整する」',
   },
   {
     term: '最速',
     category: '育成',
     isOfficial: false,
-    description: '素早さに大きく振り、素早さが上がる性格にした状態。',
+    description: 'そのポケモンの素早さを大きく伸ばし、素早さが上がる性格にした状態。全ポケモン中で一番速いという意味ではない。',
     example: '「最速にして同族対決を意識する」',
+  },
+  {
+    term: '最速実数値',
+    category: '育成',
+    isOfficial: false,
+    description: '最速にした時の実際の素早さ。最速200、最速205のように、抜き調整の基準として使う。',
+    example: '「最速205抜きには実数値206以上が必要」',
   },
   {
     term: '準速',
@@ -146,6 +153,13 @@ export const glossaryTerms: GlossaryTerm[] = [
     isOfficial: false,
     description: '素早さに大きく振るが、素早さが上がる性格ではない状態。',
     example: '「準速で火力補正を残す」',
+  },
+  {
+    term: 'トリックルーム',
+    category: '素早さ',
+    isOfficial: true,
+    description: '一定ターン、同じ優先度の技の中で素早さが低いポケモンから動きやすくなる場の効果。本編作品では5ターンが基本で、優先度そのものは逆転しない。',
+    example: '「トリックルーム下で遅い高火力アタッカーを通す」',
   },
   {
     term: '受け',
