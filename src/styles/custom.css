@@ -42,25 +42,39 @@ html {
 }
 
 .sl-markdown-content {
+  min-width: 0;
+  max-width: 100%;
   font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.content-panel h1,
+.sl-markdown-content :where(h2, h3, h4) {
+  overflow-wrap: anywhere;
+  line-break: anywhere;
+  white-space: normal;
 }
 
 .sl-markdown-content table {
-  display: block;
+  display: table;
   width: 100%;
-  overflow-x: auto;
+  max-width: 100%;
   border: 1px solid var(--dojo-border);
   border-radius: 8px;
   border-spacing: 0;
+  table-layout: fixed;
   background: color-mix(in srgb, var(--sl-color-bg) 88%, var(--sl-color-accent-low));
 }
 
 .sl-markdown-content th,
 .sl-markdown-content td {
-  min-width: 8rem;
+  min-width: 0;
   border-color: var(--dojo-border);
   padding: 0.65rem 0.75rem;
   vertical-align: top;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .sl-markdown-content th {
@@ -338,6 +352,8 @@ html {
 }
 
 .dojo-diagram {
+  display: block;
+  box-sizing: border-box;
   margin: 1.25rem 0;
   padding: 1rem;
   border: 1px solid var(--dojo-border);
@@ -509,7 +525,9 @@ html {
 .dojo-mermaid__output {
   display: none;
   overflow-x: auto;
-  padding: 0.25rem;
+  overflow-y: hidden;
+  padding: 1rem 0.75rem 1.25rem;
+  border-radius: 8px;
 }
 
 .dojo-mermaid.is-rendered .dojo-mermaid__output {
@@ -523,6 +541,8 @@ html {
   min-width: 0;
   height: auto;
   margin: 0 auto;
+  overflow: hidden;
+  background: transparent !important;
 }
 
 .dojo-mermaid__error {
@@ -671,6 +691,15 @@ dojo-search dialog::backdrop {
     inset-block-end: -1rem;
     inset-inline-end: 50%;
     transform: translateX(50%);
+  }
+
+  .sl-markdown-content table {
+    font-size: 0.88rem;
+  }
+
+  .sl-markdown-content th,
+  .sl-markdown-content td {
+    padding: 0.5rem 0.45rem;
   }
 
   dojo-search button[data-open-modal] {

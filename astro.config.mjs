@@ -65,12 +65,14 @@ export default defineConfig({
           items: [
             { label: '5.1 最初の構築テンプレ', link: '/building/archetypes/' },
             { label: '5.2 6体を表で組む', link: '/building/checklist/' },
+            { label: '5.3 努力値・種族値の読み方', link: '/building/ev-terms/' },
           ],
         },
         {
           label: '6. 試合中の判断',
           items: [
             { label: '6.1 1ターンの選び方', link: '/in-battle/decision/' },
+            { label: '6.2 補助技と設置技', link: '/in-battle/utility-moves/' },
           ],
         },
         {

@@ -47,6 +47,10 @@ const { title, caption } = Astro.props
       startOnLoad: false,
       securityLevel: 'strict',
       theme: 'base',
+      flowchart: {
+        htmlLabels: false,
+        padding: 24,
+      },
       themeVariables: {
         background: dark ? '#0b0f0a' : '#ffffff',
         primaryColor: dark ? '#0e2d22' : '#d7f4e4',
