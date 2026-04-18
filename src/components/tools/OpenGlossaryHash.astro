@@ -1,0 +1,14 @@
+<script>
+  const openGlossaryHash = () => {
+    if (!location.hash) return
+
+    const target = document.getElementById(decodeURIComponent(location.hash.slice(1)))
+    if (!target) return
+
+    target.closest('details')?.setAttribute('open', '')
+    requestAnimationFrame(() => target.scrollIntoView())
+  }
+
+  openGlossaryHash()
+  window.addEventListener('hashchange', openGlossaryHash)
+</script>

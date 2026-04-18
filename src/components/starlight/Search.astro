@@ -1,12 +1,14 @@
 ---
-import { getCollection } from 'astro:content'
+import { getCollection, render } from 'astro:content'
 import { glossaryTerms } from '../../lib/glossary'
 
 interface SearchRecord {
   title: string
   description: string
+  heading: string
   url: string
   text: string
+  excerpt: string
 }
 
 const docs = await getCollection('docs', ({ data }) => !data.draft && data.pagefind !== false)
@@ -31,21 +33,88 @@ function toText(markdown: string): string {
     .trim()
 }
 
-const searchData: SearchRecord[] = docs.map((entry) => {
-  const body = 'body' in entry && typeof entry.body === 'string' ? entry.body : ''
-  const isGlossary = entry.id === 'glossary' || entry.id === 'glossary/index'
-  const extra = isGlossary
-    ? glossaryTerms.map((term) => `${term.term} ${term.category} ${term.description} ${term.example}`).join(' ')
-    : ''
-  const pageText = isGlossary ? '' : toText(body)
+function toHeadingText(value: string): string {
+  return value
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/[{}[\]()`*_>#]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
-  return {
-    title: entry.data.title,
-    description: entry.data.description ?? '',
-    url: toUrl(entry.id),
-    text: `${entry.data.title} ${entry.data.description ?? ''} ${pageText} ${extra}`,
+function toSections(
+  markdown: string,
+  pageUrl: string,
+  title: string,
+  description: string,
+  headings: { depth: number; slug: string; text: string }[],
+): SearchRecord[] {
+  const sections: SearchRecord[] = [
+    {
+      title,
+      description,
+      heading: '概要',
+      url: pageUrl,
+      text: `${title} ${description}`,
+      excerpt: `${title} ${description}`,
+    },
+  ]
+  const renderedHeadings = headings.filter((heading) => heading.depth >= 2 && heading.depth <= 3)
+  const headingPattern = /^(#{2,3})\s+(.+)$/gm
+  const markdownHeadings = [...markdown.matchAll(headingPattern)]
+
+  for (let index = 0; index < markdownHeadings.length; index += 1) {
+    const match = markdownHeadings[index]
+    const renderedHeading = renderedHeadings[index]
+    const heading = renderedHeading?.text ?? toHeadingText(match[2] ?? '')
+    const start = (match.index ?? 0) + match[0].length
+    const end =
+      index + 1 < markdownHeadings.length ? (markdownHeadings[index + 1].index ?? markdown.length) : markdown.length
+    const text = toText(markdown.slice(start, end))
+
+    if (!heading || !text) continue
+
+    const url = renderedHeading?.slug ? `${pageUrl}#${encodeURIComponent(renderedHeading.slug)}` : pageUrl
+    sections.push({
+      title,
+      description,
+      heading,
+      url,
+      text: `${title} ${description} ${heading} ${text}`,
+      excerpt: text,
+    })
   }
-})
+
+  return sections
+}
+
+const searchData: SearchRecord[] = (
+  await Promise.all(
+    docs.map(async (entry) => {
+      const body = 'body' in entry && typeof entry.body === 'string' ? entry.body : ''
+      const isGlossary = entry.id === 'glossary' || entry.id === 'glossary/index'
+      const pageUrl = toUrl(entry.id)
+      const { headings } = await render(entry)
+      const pageSections = isGlossary
+        ? []
+        : toSections(body, pageUrl, entry.data.title, entry.data.description ?? '', headings)
+      const glossarySections = isGlossary
+        ? glossaryTerms.map((term) => {
+            const text = `${term.term} ${term.category} ${term.description} ${term.example}`
+            return {
+              title: entry.data.title,
+              description: entry.data.description ?? '',
+              heading: term.term,
+              url: `${pageUrl}#${encodeURIComponent(term.term)}`,
+              text,
+              excerpt: text,
+            }
+          })
+        : []
+
+      return [...pageSections, ...glossarySections]
+    }),
+  )
+).flat()
 
 const label = Astro.locals.t('search.label')
 const cancelLabel = Astro.locals.t('search.cancelLabel')
@@ -119,19 +188,31 @@ const ctrlLabel = Astro.locals.t('search.ctrlKey')
           .map((item) => {
             const haystack = item.text.toLowerCase()
             const score = terms.reduce((total, term) => total + (haystack.includes(term) ? 1 : 0), 0)
-            return { item, score }
+            const excerpt = item.excerpt || item.text
+            const lowerExcerpt = excerpt.toLowerCase()
+            const snippetSource = terms.some((term) => lowerExcerpt.includes(term)) ? excerpt : item.text
+            return { item, score, snippet: createSnippet(snippetSource, terms) }
           })
           .filter((entry) => entry.score > 0)
-          .sort((a, b) => b.score - a.score || a.item.title.localeCompare(b.item.title, 'ja'))
+          .sort(
+            (a, b) =>
+              b.score - a.score ||
+              a.item.title.localeCompare(b.item.title, 'ja') ||
+              a.item.heading.localeCompare(b.item.heading, 'ja'),
+          )
           .slice(0, 8)
 
         status.textContent = matches.length ? `${matches.length}件の候補` : '一致するページがありません。'
 
-        for (const { item } of matches) {
+        for (const { item, snippet } of matches) {
           const link = document.createElement('a')
           link.className = 'dojo-search__result'
           link.href = item.url
-          link.innerHTML = `<strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.description)}</span>`
+          link.innerHTML = `
+            <strong>${escapeHtml(item.title)}</strong>
+            <span>${escapeHtml(item.heading)}</span>
+            <p>${snippet}</p>
+          `
           results.append(link)
         }
       }
@@ -145,6 +226,21 @@ const ctrlLabel = Astro.locals.t('search.ctrlKey')
       openButton.addEventListener('click', openModal)
       closeButton.addEventListener('click', closeModal)
       input.addEventListener('input', render)
+      results.addEventListener('click', (event) => {
+        const link = event.target.closest('a')
+        if (!link) return
+
+        const target = new URL(link.href)
+        closeModal()
+
+        if (target.origin === location.origin && target.pathname === location.pathname && target.hash) {
+          event.preventDefault()
+          history.pushState(null, '', target)
+          const targetElement = document.getElementById(decodeURIComponent(target.hash.slice(1)))
+          targetElement?.closest('details')?.setAttribute('open', '')
+          targetElement?.scrollIntoView()
+        }
+      })
       window.addEventListener('click', onWindowClick)
       window.addEventListener('keydown', (event) => {
         if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
@@ -161,6 +257,30 @@ const ctrlLabel = Astro.locals.t('search.ctrlKey')
       const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
       return entities[char]
     })
+  }
+
+  function escapeRegExp(value) {
+    return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  }
+
+  function createSnippet(value, terms) {
+    const source = value.replace(/\s+/g, ' ').trim()
+    const lowerSource = source.toLowerCase()
+    const hit = terms
+      .map((term) => ({ term, index: lowerSource.indexOf(term) }))
+      .filter((entry) => entry.index >= 0)
+      .sort((a, b) => a.index - b.index)[0]
+
+    if (!hit) return escapeHtml(source.slice(0, 140))
+
+    const start = Math.max(0, hit.index - 54)
+    const end = Math.min(source.length, hit.index + hit.term.length + 86)
+    const snippet = `${start > 0 ? '…' : ''}${source.slice(start, end)}${end < source.length ? '…' : ''}`
+    const escapedTerms = terms.map(escapeRegExp).filter(Boolean)
+    if (!escapedTerms.length) return escapeHtml(snippet)
+
+    const pattern = new RegExp(`(${escapedTerms.join('|')})`, 'gi')
+    return escapeHtml(snippet).replace(pattern, '<mark>$1</mark>')
   }
 
   customElements.define('dojo-search', DojoSearch)

@@ -5,6 +5,7 @@ description: 非公式用語を試合中の行動に置き換える
 
 import { glossaryTerms } from '../../../lib/glossary'
 import MermaidDiagram from '../../../components/diagrams/MermaidDiagram.astro'
+import OpenGlossaryHash from '../../../components/tools/OpenGlossaryHash.astro'
 import QuizBlock from '../../../components/tools/QuizBlock'
 
 ## このページで覚えること
@@ -42,7 +43,7 @@ flowchart LR
   <summary>用語一覧を開く</summary>
 
 {glossaryTerms.map((item) => (
-  <div class="dojo-step">
+  <div id={item.term} class="dojo-step">
     <p>
       <strong>{item.term}</strong> <span class="dojo-badge">{item.category}</span>
       {!item.isOfficial && <span class="dojo-badge dojo-badge--warning">非公式</span>}
@@ -53,6 +54,8 @@ flowchart LR
 ))}
 
 </details>
+
+<OpenGlossaryHash />
 
 ## 言葉を判断へ変える
 
