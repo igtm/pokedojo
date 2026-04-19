@@ -22,6 +22,7 @@ export default defineConfig({
       customCss: ['./src/styles/custom.css'],
       pagefind: false,
       components: {
+        Header: './src/components/starlight/Header.astro',
         Search: './src/components/starlight/Search.astro',
       },
       tableOfContents: {
@@ -80,12 +81,6 @@ export default defineConfig({
           label: '7. Champions 実戦準備',
           items: [
             { label: '7.1 情報の見方と発展', link: '/champions/advanced/' },
-          ],
-        },
-        {
-          label: '8. ツール集',
-          items: [
-            { label: '8.1 練習ツール', link: '/tools/' },
           ],
         },
       ],
