@@ -71,6 +71,27 @@ export const glossaryTerms: GlossaryTerm[] = [
     example: '「Sに努力値を振って先に動けるようにする」',
   },
   {
+    term: '能力ポイント',
+    category: '育成',
+    isOfficial: true,
+    description: 'ポケモンチャンピオンズで能力を伸ばすために配るポイント。合計66、1能力32までを役割に合わせて振る。',
+    example: '「A32/S32/余り2で高速物理アタッカーにする」',
+  },
+  {
+    term: 'HP調整',
+    category: '育成',
+    isOfficial: false,
+    description: 'ステルスロック、みがわり、たべのこし、オボンのみなどを考えてHP実数値を決めること。',
+    example: '「ステルスロックを意識して8n-1のHPにする」',
+  },
+  {
+    term: '奇数HP',
+    category: '育成',
+    isOfficial: false,
+    description: 'HP実数値を奇数にする調整。半分ダメージで1残ることがあるが、オボンのみなどでは不利になる場合もある。',
+    example: '「4倍ステルスロックを2回受ける想定で奇数HPにする」',
+  },
+  {
     term: '実数値',
     category: '育成',
     isOfficial: false,
@@ -90,6 +111,13 @@ export const glossaryTerms: GlossaryTerm[] = [
     isOfficial: false,
     description: '性格によって能力が上がったり下がったりする補正。最速や火力補正の話でよく出る。',
     example: '「Sに性格補正をかけて最速にする」',
+  },
+  {
+    term: '能力補正',
+    category: '育成',
+    isOfficial: true,
+    description: 'ポケモンチャンピオンズで、能力の1つを上げ、別の1つを下げる補正。従来の性格補正に近い読み方をする。',
+    example: '「能力補正でSを上げて最速にする」',
   },
   {
     term: '個体値',

@@ -9,6 +9,7 @@ import {
 type DamageCategory = 'physical' | 'special'
 type Weather = 'none' | 'sun' | 'rain'
 type Terrain = 'none' | 'electric' | 'grassy' | 'psychic' | 'misty'
+type InputPanel = 'attack' | 'defense'
 
 interface CalcTab {
   id: string
@@ -403,6 +404,7 @@ export default function DamageCalcApp() {
   const [activeId, setActiveId] = createSignal(firstTab.id)
   const [history, setHistory] = createSignal<HistoryEntry[]>([])
   const [historyLoaded, setHistoryLoaded] = createSignal(false)
+  const [activePanel, setActivePanel] = createSignal<InputPanel>('attack')
 
   const activeTab = createMemo(() => tabs().find((tab) => tab.id === activeId()) ?? tabs()[0])
   const result = createMemo(() => calculateDamage(activeTab()))
@@ -487,72 +489,252 @@ export default function DamageCalcApp() {
   return (
     <section class="damage-app" aria-label="ダメージ計算アプリ">
       <header class="damage-app__header">
-        <div>
+        <div class="damage-app__brand">
           <p class="damage-app__eyebrow">Damage Calculator</p>
           <h2>ダメージ計算</h2>
         </div>
-        <div class="damage-app__headline">
-          <strong>
-            {result().min} - {result().max}
-          </strong>
-          <span>
-            {result().minPercent}% - {result().maxPercent}% / {result().koText}
-          </span>
-        </div>
+
+        <nav class="damage-app__tabs" aria-label="計算タブ">
+          <For each={tabs()}>
+            {(tab) => (
+              <div class="damage-app__tab" classList={{ 'is-active': tab.id === activeId() }}>
+                <button type="button" onClick={() => setActiveId(tab.id)}>
+                  {tab.name}
+                </button>
+                <Show when={tabs().length > 1}>
+                  <button
+                    type="button"
+                    class="damage-app__tab-close"
+                    aria-label={`${tab.name}を閉じる`}
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      closeTab(tab.id)
+                    }}
+                  >
+                    ×
+                  </button>
+                </Show>
+              </div>
+            )}
+          </For>
+        </nav>
+
         <div class="damage-app__actions">
           <button type="button" class="dojo-button dojo-button--primary" onClick={saveLog}>
-            ログ保存
+            保存
           </button>
           <button type="button" class="dojo-button" onClick={duplicateTab}>
-            タブ複製
+            複製
           </button>
         </div>
       </header>
 
-      <nav class="damage-app__tabs" aria-label="計算タブ">
-        <For each={tabs()}>
-          {(tab) => (
-            <div class="damage-app__tab" classList={{ 'is-active': tab.id === activeId() }}>
-              <button type="button" onClick={() => setActiveId(tab.id)}>
-                {tab.name}
-              </button>
-              <Show when={tabs().length > 1}>
-                <button
-                  type="button"
-                  class="damage-app__tab-close"
-                  aria-label={`${tab.name}を閉じる`}
-                  onClick={(event) => {
-                    event.stopPropagation()
-                    closeTab(tab.id)
-                  }}
-                >
-                  ×
-                </button>
-              </Show>
-            </div>
-          )}
-        </For>
+      <nav class="damage-mode-tabs" aria-label="入力切り替え">
+        <button
+          type="button"
+          classList={{ 'is-active': activePanel() === 'attack' }}
+          onClick={() => setActivePanel('attack')}
+        >
+          攻撃
+        </button>
+        <button
+          type="button"
+          classList={{ 'is-active': activePanel() === 'defense' }}
+          onClick={() => setActivePanel('defense')}
+        >
+          防御
+        </button>
       </nav>
 
-      <main class="damage-app__workspace">
-        <div id="damage-input" class="damage-app__input">
-          <section class="damage-app__section">
-            <div class="damage-app__section-head">
-              <h3>入力</h3>
-              <p>ポケモン名はメモ用です。数値は種族値と努力値を手で合わせます。</p>
-            </div>
-
-            <div class="damage-app__quick">
-              <For each={presets}>
-                {(preset) => (
-                  <button type="button" class="dojo-button" onClick={() => applyPreset(preset.patch)}>
-                    {preset.label}
-                  </button>
-                )}
-              </For>
-            </div>
-
-            <div class="damage-grid damage-grid--three">
+      <main id="damage-input" class="damage-app__workspace">
+        <Show
+          when={activePanel() === 'attack'}
+          fallback={
+            <section class="damage-panel" aria-label="防御入力">
+              <div class="damage-grid damage-grid--compact">
+                <label class="damage-field" for="damage-defense-template">
+                  <span>耐久テンプレ</span>
+                  <select
+                    id="damage-defense-template"
+                    class="dojo-select"
+                    onInput={(event) => {
+                      if (event.currentTarget.value === 'h') updateActive({ defenderHpEv: 252, defenderEv: 0 })
+                      if (event.currentTarget.value === 'hbd') {
+                        updateActive({ defenderHpEv: 252, defenderEv: 252, defenderNature: 1.1 })
+                      }
+                      event.currentTarget.value = ''
+                    }}
+                  >
+                    <option value="">選択</option>
+                    <option value="h">Hぶっぱ</option>
+                    <option value="hbd">HBD厚め</option>
+                  </select>
+                </label>
+                <label class="damage-field" for="damage-defender">
+                  <span>防御側</span>
+                  <input
+                    id="damage-defender"
+                    class="dojo-input"
+                    value={activeTab().defenderName}
+                    onInput={(event) => updateActive({ defenderName: event.currentTarget.value })}
+                  />
+                </label>
+                <NumberField
+                  id="damage-hp-percent"
+                  label="残りHP"
+                  min={1}
+                  max={100}
+                  suffix="%"
+                  value={activeTab().hpPercent}
+                  onInput={(value) => updateActive({ hpPercent: clamp(value, 1, 100) })}
+                />
+                <TypeSelect
+                  id="damage-defender-type1"
+                  label="タイプ1"
+                  value={activeTab().defenderType1}
+                  onInput={(value) => updateActive({ defenderType1: value })}
+                />
+                <TypeSelect
+                  id="damage-defender-type2"
+                  label="タイプ2"
+                  includeNone
+                  value={activeTab().defenderType2}
+                  onInput={(value) => updateActive({ defenderType2: value })}
+                />
+                <NumberField
+                  id="damage-base-hp"
+                  label="H種族値"
+                  min={1}
+                  max={255}
+                  value={activeTab().defenderBaseHp}
+                  onInput={(value) => updateActive({ defenderBaseHp: clamp(value, 1, 255) })}
+                />
+                <NumberField
+                  id="damage-base-def"
+                  label="B種族値"
+                  min={1}
+                  max={255}
+                  value={activeTab().defenderBaseDef}
+                  onInput={(value) => updateActive({ defenderBaseDef: clamp(value, 1, 255) })}
+                />
+                <NumberField
+                  id="damage-base-spd"
+                  label="D種族値"
+                  min={1}
+                  max={255}
+                  value={activeTab().defenderBaseSpd}
+                  onInput={(value) => updateActive({ defenderBaseSpd: clamp(value, 1, 255) })}
+                />
+                <NumberField
+                  id="damage-hp-ev"
+                  label="H努力値"
+                  min={0}
+                  max={252}
+                  step={4}
+                  value={activeTab().defenderHpEv}
+                  onInput={(value) => updateActive({ defenderHpEv: clamp(value, 0, 252) })}
+                />
+                <NumberField
+                  id="damage-defender-ev"
+                  label="B/D努力値"
+                  min={0}
+                  max={252}
+                  step={4}
+                  value={activeTab().defenderEv}
+                  onInput={(value) => updateActive({ defenderEv: clamp(value, 0, 252) })}
+                />
+                <label class="damage-field" for="damage-defender-nature">
+                  <span>性格補正</span>
+                  <select
+                    id="damage-defender-nature"
+                    class="dojo-select"
+                    value={activeTab().defenderNature}
+                    onInput={(event) => updateActive({ defenderNature: Number(event.currentTarget.value) })}
+                  >
+                    <option value="1.1">上昇 1.1</option>
+                    <option value="1">補正なし</option>
+                    <option value="0.9">下降 0.9</option>
+                  </select>
+                </label>
+                <NumberField
+                  id="damage-defender-stage"
+                  label="B/Dランク"
+                  min={-6}
+                  max={6}
+                  value={activeTab().defenderStage}
+                  onInput={(value) => updateActive({ defenderStage: clamp(value, -6, 6) })}
+                />
+                <label class="damage-field damage-field--check" for="damage-screen">
+                  <span>壁</span>
+                  <input
+                    id="damage-screen"
+                    type="checkbox"
+                    checked={activeTab().isScreen}
+                    onInput={(event) => updateActive({ isScreen: event.currentTarget.checked })}
+                  />
+                </label>
+                <label class="damage-field damage-field--check" for="damage-stealth-rock">
+                  <span>ステロ</span>
+                  <input
+                    id="damage-stealth-rock"
+                    type="checkbox"
+                    checked={activeTab().stealthRock}
+                    onInput={(event) => updateActive({ stealthRock: event.currentTarget.checked })}
+                  />
+                </label>
+                <label class="damage-field damage-field--check" for="damage-grounded">
+                  <span>まきびし対象</span>
+                  <input
+                    id="damage-grounded"
+                    type="checkbox"
+                    checked={activeTab().grounded}
+                    onInput={(event) => updateActive({ grounded: event.currentTarget.checked })}
+                  />
+                </label>
+                <label class="damage-field" for="damage-spikes">
+                  <span>まきびし</span>
+                  <select
+                    id="damage-spikes"
+                    class="dojo-select"
+                    value={activeTab().spikeLayers}
+                    onInput={(event) => updateActive({ spikeLayers: Number(event.currentTarget.value) })}
+                  >
+                    <option value="0">なし</option>
+                    <option value="1">1回</option>
+                    <option value="2">2回</option>
+                    <option value="3">3回</option>
+                  </select>
+                </label>
+                <NumberField
+                  id="damage-fixed-chip"
+                  label="固定削り"
+                  min={0}
+                  max={999}
+                  value={activeTab().fixedChip}
+                  onInput={(value) => updateActive({ fixedChip: clamp(value, 0, 999) })}
+                />
+              </div>
+            </section>
+          }
+        >
+          <section class="damage-panel" aria-label="攻撃入力">
+            <div class="damage-grid damage-grid--compact">
+              <label class="damage-field" for="damage-preset">
+                <span>例</span>
+                <select
+                  id="damage-preset"
+                  class="dojo-select"
+                  onInput={(event) => {
+                    const value = event.currentTarget.value
+                    if (!value) return
+                    applyPreset(presets[Number(value)]?.patch ?? {})
+                    event.currentTarget.value = ''
+                  }}
+                >
+                  <option value="">選択</option>
+                  <For each={presets}>{(preset, index) => <option value={index()}>{preset.label}</option>}</For>
+                </select>
+              </label>
               <label class="damage-field" for="damage-tab-name">
                 <span>タブ名</span>
                 <input
@@ -564,31 +746,12 @@ export default function DamageCalcApp() {
               </label>
               <NumberField
                 id="damage-level"
-                label="レベル"
+                label="Lv"
                 min={1}
                 max={100}
                 value={activeTab().level}
                 onInput={(value) => updateActive({ level: clamp(value, 1, 100) })}
               />
-              <NumberField
-                id="damage-hp-percent"
-                label="相手の残りHP"
-                min={1}
-                max={100}
-                suffix="%"
-                value={activeTab().hpPercent}
-                onInput={(value) => updateActive({ hpPercent: clamp(value, 1, 100) })}
-              />
-            </div>
-          </section>
-
-          <section class="damage-app__section">
-            <div class="damage-app__section-head">
-              <h3>攻撃側</h3>
-              <p>物理ならA、特殊ならCを使います。性格補正とランク補正もここで反映します。</p>
-            </div>
-
-            <div class="damage-grid damage-grid--three">
               <label class="damage-field" for="damage-attacker">
                 <span>攻撃側</span>
                 <input
@@ -596,6 +759,15 @@ export default function DamageCalcApp() {
                   class="dojo-input"
                   value={activeTab().attackerName}
                   onInput={(event) => updateActive({ attackerName: event.currentTarget.value })}
+                />
+              </label>
+              <label class="damage-field" for="damage-move">
+                <span>技名</span>
+                <input
+                  id="damage-move"
+                  class="dojo-input"
+                  value={activeTab().moveName}
+                  onInput={(event) => updateActive({ moveName: event.currentTarget.value })}
                 />
               </label>
               <TypeSelect
@@ -624,6 +796,27 @@ export default function DamageCalcApp() {
                 </select>
               </label>
               <NumberField
+                id="damage-power"
+                label="威力"
+                min={0}
+                max={250}
+                value={activeTab().movePower}
+                onInput={(value) => updateActive({ movePower: clamp(value, 0, 250) })}
+              />
+              <TypeSelect
+                id="damage-move-type"
+                label="技タイプ"
+                value={activeTab().moveType}
+                onInput={(value) => updateActive({ moveType: (value || 'normal') as PokemonType })}
+              />
+              <TypeSelect
+                id="damage-tera-type"
+                label="テラ"
+                includeNone
+                value={activeTab().teraType}
+                onInput={(value) => updateActive({ teraType: value })}
+              />
+              <NumberField
                 id="damage-base-atk"
                 label="A種族値"
                 min={1}
@@ -649,7 +842,7 @@ export default function DamageCalcApp() {
                 onInput={(value) => updateActive({ attackerEv: clamp(value, 0, 252) })}
               />
               <label class="damage-field" for="damage-attacker-nature">
-                <span>性格補正</span>
+                <span>性格</span>
                 <select
                   id="damage-attacker-nature"
                   class="dojo-select"
@@ -668,46 +861,6 @@ export default function DamageCalcApp() {
                 max={6}
                 value={activeTab().attackerStage}
                 onInput={(value) => updateActive({ attackerStage: clamp(value, -6, 6) })}
-              />
-            </div>
-          </section>
-
-          <section class="damage-app__section">
-            <div class="damage-app__section-head">
-              <h3>技</h3>
-              <p>タイプ一致、テラスタル、タイプ相性、天候、フィールドをまとめて見ます。</p>
-            </div>
-
-            <div class="damage-grid damage-grid--three">
-              <label class="damage-field" for="damage-move">
-                <span>技名</span>
-                <input
-                  id="damage-move"
-                  class="dojo-input"
-                  value={activeTab().moveName}
-                  onInput={(event) => updateActive({ moveName: event.currentTarget.value })}
-                />
-              </label>
-              <NumberField
-                id="damage-power"
-                label="威力"
-                min={0}
-                max={250}
-                value={activeTab().movePower}
-                onInput={(value) => updateActive({ movePower: clamp(value, 0, 250) })}
-              />
-              <TypeSelect
-                id="damage-move-type"
-                label="技タイプ"
-                value={activeTab().moveType}
-                onInput={(value) => updateActive({ moveType: (value || 'normal') as PokemonType })}
-              />
-              <TypeSelect
-                id="damage-tera-type"
-                label="テラスタル"
-                includeNone
-                value={activeTab().teraType}
-                onInput={(value) => updateActive({ teraType: value })}
               />
               <label class="damage-field" for="damage-weather">
                 <span>天候</span>
@@ -737,211 +890,9 @@ export default function DamageCalcApp() {
                   <option value="misty">ミスト</option>
                 </select>
               </label>
-            </div>
-          </section>
-
-          <section class="damage-app__section">
-            <div class="damage-app__section-head">
-              <h3>防御側</h3>
-              <p>物理ならB、特殊ならDを使います。Hだけ振る、HBDに振る確認もここでできます。</p>
-            </div>
-
-            <div class="damage-grid damage-grid--three">
-              <label class="damage-field" for="damage-defender">
-                <span>防御側</span>
-                <input
-                  id="damage-defender"
-                  class="dojo-input"
-                  value={activeTab().defenderName}
-                  onInput={(event) => updateActive({ defenderName: event.currentTarget.value })}
-                />
-              </label>
-              <TypeSelect
-                id="damage-defender-type1"
-                label="タイプ1"
-                value={activeTab().defenderType1}
-                onInput={(value) => updateActive({ defenderType1: value })}
-              />
-              <TypeSelect
-                id="damage-defender-type2"
-                label="タイプ2"
-                includeNone
-                value={activeTab().defenderType2}
-                onInput={(value) => updateActive({ defenderType2: value })}
-              />
-              <NumberField
-                id="damage-base-hp"
-                label="H種族値"
-                min={1}
-                max={255}
-                value={activeTab().defenderBaseHp}
-                onInput={(value) => updateActive({ defenderBaseHp: clamp(value, 1, 255) })}
-              />
-              <NumberField
-                id="damage-base-def"
-                label="B種族値"
-                min={1}
-                max={255}
-                value={activeTab().defenderBaseDef}
-                onInput={(value) => updateActive({ defenderBaseDef: clamp(value, 1, 255) })}
-              />
-              <NumberField
-                id="damage-base-spd"
-                label="D種族値"
-                min={1}
-                max={255}
-                value={activeTab().defenderBaseSpd}
-                onInput={(value) => updateActive({ defenderBaseSpd: clamp(value, 1, 255) })}
-              />
-              <NumberField
-                id="damage-hp-ev"
-                label="H努力値"
-                min={0}
-                max={252}
-                step={4}
-                value={activeTab().defenderHpEv}
-                onInput={(value) => updateActive({ defenderHpEv: clamp(value, 0, 252) })}
-              />
-              <NumberField
-                id="damage-defender-ev"
-                label="B/D努力値"
-                min={0}
-                max={252}
-                step={4}
-                value={activeTab().defenderEv}
-                onInput={(value) => updateActive({ defenderEv: clamp(value, 0, 252) })}
-              />
-              <label class="damage-field" for="damage-defender-nature">
-                <span>性格補正</span>
-                <select
-                  id="damage-defender-nature"
-                  class="dojo-select"
-                  value={activeTab().defenderNature}
-                  onInput={(event) => updateActive({ defenderNature: Number(event.currentTarget.value) })}
-                >
-                  <option value="1.1">上昇 1.1</option>
-                  <option value="1">補正なし</option>
-                  <option value="0.9">下降 0.9</option>
-                </select>
-              </label>
-              <NumberField
-                id="damage-defender-stage"
-                label="B/Dランク"
-                min={-6}
-                max={6}
-                value={activeTab().defenderStage}
-                onInput={(value) => updateActive({ defenderStage: clamp(value, -6, 6) })}
-              />
-            </div>
-
-            <div class="damage-app__quick">
-              <button type="button" class="dojo-button" onClick={() => updateActive({ defenderHpEv: 252, defenderEv: 0 })}>
-                Hぶっぱ
-              </button>
-              <button
-                type="button"
-                class="dojo-button"
-                onClick={() => updateActive({ defenderHpEv: 252, defenderEv: 252, defenderNature: 1.1 })}
-              >
-                HBD厚め
-              </button>
-              <button type="button" class="dojo-button" onClick={() => updateActive({ attackerEv: 32 })}>
-                A/C 32
-              </button>
-            </div>
-          </section>
-
-          <section class="damage-app__section">
-            <div class="damage-app__section-head">
-              <h3>補正と削り</h3>
-              <p>やけど、壁、ダブル補正、設置技、固定ダメージを足して倒せるか見ます。</p>
-            </div>
-
-            <div class="damage-switches">
-              <label>
-                <input
-                  type="checkbox"
-                  checked={activeTab().isBurned}
-                  onInput={(event) => updateActive({ isBurned: event.currentTarget.checked })}
-                />
-                やけど
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={activeTab().ignoreBurn}
-                  onInput={(event) => updateActive({ ignoreBurn: event.currentTarget.checked })}
-                />
-                やけど補正なし
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={activeTab().isScreen}
-                  onInput={(event) => updateActive({ isScreen: event.currentTarget.checked })}
-                />
-                壁あり
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={activeTab().isSpread}
-                  onInput={(event) => updateActive({ isSpread: event.currentTarget.checked })}
-                />
-                範囲技
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={activeTab().isCritical}
-                  onInput={(event) => updateActive({ isCritical: event.currentTarget.checked })}
-                />
-                急所
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={activeTab().stealthRock}
-                  onInput={(event) => updateActive({ stealthRock: event.currentTarget.checked })}
-                />
-                ステルスロック
-              </label>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={activeTab().grounded}
-                  onInput={(event) => updateActive({ grounded: event.currentTarget.checked })}
-                />
-                まきびしを受ける
-              </label>
-            </div>
-
-            <div class="damage-grid damage-grid--three">
-              <label class="damage-field" for="damage-spikes">
-                <span>まきびし</span>
-                <select
-                  id="damage-spikes"
-                  class="dojo-select"
-                  value={activeTab().spikeLayers}
-                  onInput={(event) => updateActive({ spikeLayers: Number(event.currentTarget.value) })}
-                >
-                  <option value="0">なし</option>
-                  <option value="1">1回</option>
-                  <option value="2">2回</option>
-                  <option value="3">3回</option>
-                </select>
-              </label>
-              <NumberField
-                id="damage-fixed-chip"
-                label="固定ダメージ"
-                min={0}
-                max={999}
-                value={activeTab().fixedChip}
-                onInput={(value) => updateActive({ fixedChip: clamp(value, 0, 999) })}
-              />
               <NumberField
                 id="damage-other-modifier"
-                label="その他補正"
+                label="その他"
                 min={0}
                 max={4}
                 step={0.05}
@@ -949,127 +900,120 @@ export default function DamageCalcApp() {
                 value={activeTab().otherModifier}
                 onInput={(value) => updateActive({ otherModifier: clampDecimal(value, 0, 4) })}
               />
+              <label class="damage-field damage-field--check" for="damage-burned">
+                <span>やけど</span>
+                <input
+                  id="damage-burned"
+                  type="checkbox"
+                  checked={activeTab().isBurned}
+                  onInput={(event) => updateActive({ isBurned: event.currentTarget.checked })}
+                />
+              </label>
+              <label class="damage-field damage-field--check" for="damage-ignore-burn">
+                <span>火傷無視</span>
+                <input
+                  id="damage-ignore-burn"
+                  type="checkbox"
+                  checked={activeTab().ignoreBurn}
+                  onInput={(event) => updateActive({ ignoreBurn: event.currentTarget.checked })}
+                />
+              </label>
+              <label class="damage-field damage-field--check" for="damage-spread">
+                <span>範囲技</span>
+                <input
+                  id="damage-spread"
+                  type="checkbox"
+                  checked={activeTab().isSpread}
+                  onInput={(event) => updateActive({ isSpread: event.currentTarget.checked })}
+                />
+              </label>
+              <label class="damage-field damage-field--check" for="damage-critical">
+                <span>急所</span>
+                <input
+                  id="damage-critical"
+                  type="checkbox"
+                  checked={activeTab().isCritical}
+                  onInput={(event) => updateActive({ isCritical: event.currentTarget.checked })}
+                />
+              </label>
             </div>
           </section>
-        </div>
-
-        <aside id="damage-result" class="damage-app__result" aria-label="計算結果">
-          <div class="damage-result__top">
-            <p>{result().tab.moveName}</p>
-            <strong>
-              {result().min} - {result().max}
-            </strong>
-            <span>
-              {result().minPercent}% - {result().maxPercent}% / {result().koText}
-            </span>
-          </div>
-
-          <dl class="damage-result__stats">
-            <div>
-              <dt>攻撃実数値</dt>
-              <dd>{result().attackerStat}</dd>
-            </div>
-            <div>
-              <dt>防御実数値</dt>
-              <dd>{result().defenderStat}</dd>
-            </div>
-            <div>
-              <dt>相手HP</dt>
-              <dd>{result().currentHp} / {result().hp}</dd>
-            </div>
-            <div>
-              <dt>削り後HP</dt>
-              <dd>{result().requiredHp}</dd>
-            </div>
-            <div>
-              <dt>タイプ相性</dt>
-              <dd>{formatMultiplier(result().typeEffectiveness)}</dd>
-            </div>
-            <div>
-              <dt>一致補正</dt>
-              <dd>{result().stab}倍</dd>
-            </div>
-          </dl>
-
-          <div class="damage-result__meter" aria-label="ダメージ幅">
-            <span style={{ width: `${Math.min(100, result().minPercent)}%` }} />
-            <span style={{ width: `${Math.min(100, result().maxPercent)}%` }} />
-          </div>
-
-          <div class="damage-rolls">
-            <For each={result().rolls}>
-              {(damage, index) => (
-                <span classList={{ 'is-ko': damage >= result().requiredHp && result().requiredHp > 0 }}>
-                  {rollFactors[index()]}: {damage}
-                </span>
-              )}
-            </For>
-          </div>
-
-          <p class="damage-app__note">
-            乱数は85から100までの16段階で表示しています。厳密な作品固有処理と違う時は、その他補正で調整してください。
-          </p>
-        </aside>
+        </Show>
       </main>
 
-      <section id="damage-history" class="damage-app__history">
-        <div class="damage-app__section-head">
-          <h3>履歴と合算</h3>
-          <p>削り候補を保存し、チェックしたログだけを合算します。復元すると別タブで開きます。</p>
+      <footer id="damage-result" class="damage-app__result" aria-label="計算結果">
+        <div class="damage-result__main">
+          <span>{result().tab.attackerName} {result().tab.moveName} → {result().tab.defenderName}</span>
+          <strong>{result().min} - {result().max}</strong>
+          <em>{result().minPercent}% - {result().maxPercent}% / {result().koText}</em>
         </div>
 
-        <div class="damage-history__summary">
-          <strong>
-            {selectedTotal().min} - {selectedTotal().max}
-          </strong>
-          <span>
-            選択中 {selectedHistory().length}件 / 現在の相手HP {result().hp} に対して{' '}
-            {Math.round((selectedTotal().min / result().hp) * 1000) / 10}% -{' '}
-            {Math.round((selectedTotal().max / result().hp) * 1000) / 10}%
-          </span>
-          <button type="button" class="dojo-button" onClick={clearHistory}>
-            履歴を消す
-          </button>
+        <dl class="damage-result__stats">
+          <div>
+            <dt>攻/防</dt>
+            <dd>{result().attackerStat} / {result().defenderStat}</dd>
+          </div>
+          <div>
+            <dt>HP</dt>
+            <dd>{result().requiredHp} / {result().hp}</dd>
+          </div>
+          <div>
+            <dt>削り</dt>
+            <dd>{result().chipDamage}</dd>
+          </div>
+          <div>
+            <dt>相性</dt>
+            <dd>{formatMultiplier(result().typeEffectiveness)}</dd>
+          </div>
+          <div>
+            <dt>一致</dt>
+            <dd>{result().stab}倍</dd>
+          </div>
+          <div>
+            <dt>合算</dt>
+            <dd>{selectedTotal().min} - {selectedTotal().max}</dd>
+          </div>
+        </dl>
+
+        <div class="damage-roll-strip" aria-label="16段階乱数">
+          <For each={result().rolls}>
+            {(damage, index) => (
+              <span classList={{ 'is-ko': damage >= result().requiredHp && result().requiredHp > 0 }}>
+                {rollFactors[index()]}:{damage}
+              </span>
+            )}
+          </For>
         </div>
 
-        <Show when={history().length} fallback={<p class="damage-app__empty">まだ履歴がありません。</p>}>
-          <div class="damage-history__list">
-            <For each={history()}>
+        <div class="damage-history-compact" id="damage-history">
+          <strong>履歴 {selectedHistory().length}/{history().length}</strong>
+          <Show when={history().length} fallback={<span>保存するとここに残ります。</span>}>
+            <For each={history().slice(0, 3)}>
               {(entry) => (
-                <article class="damage-history__item">
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={entry.checked}
-                      onInput={(event) =>
-                        setHistory((current) =>
-                          current.map((item) =>
-                            item.id === entry.id ? { ...item, checked: event.currentTarget.checked } : item,
-                          ),
-                        )
-                      }
-                    />
-                    <span>
-                      <strong>{entry.label}</strong>
-                      <small>
-                        {entry.createdAt} / {entry.detail}
-                      </small>
-                    </span>
-                  </label>
-                  <button type="button" class="dojo-button" onClick={() => restoreLog(entry)}>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={entry.checked}
+                    onInput={(event) =>
+                      setHistory((current) =>
+                        current.map((item) =>
+                          item.id === entry.id ? { ...item, checked: event.currentTarget.checked } : item,
+                        ),
+                      )
+                    }
+                  />
+                  <span>{entry.label}</span>
+                  <button type="button" onClick={() => restoreLog(entry)}>
                     復元
                   </button>
-                </article>
+                </label>
               )}
             </For>
-          </div>
-        </Show>
-      </section>
-
-      <footer class="damage-app__footer-tabs">
-        <a href="#damage-input">入力</a>
-        <a href="#damage-result">結果</a>
-        <a href="#damage-history">履歴</a>
+          </Show>
+          <button type="button" onClick={clearHistory}>
+            消去
+          </button>
+        </div>
       </footer>
     </section>
   )
