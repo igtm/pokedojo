@@ -75,6 +75,7 @@ export default defineConfig({
           items: [
             { label: '6.1 1ターンの選び方', link: '/in-battle/decision/' },
             { label: '6.2 補助技と設置技', link: '/in-battle/utility-moves/' },
+            { label: '6.3 覚えておきたい特性持ち', link: '/in-battle/special-abilities/' },
           ],
         },
         {
